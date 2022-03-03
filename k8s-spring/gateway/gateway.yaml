@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-spring-gateway
+  namespace: zbt-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-spring-gateway
+  template:
+    metadata:
+      labels:
+        app: k8s-spring-gateway
+    spec:
+      nodeSelector:
+        spring: "true"
+      containers:
+      - name: gateway
+        image: registry.cn-hangzhou.aliyuncs.com/k8s_spring/test:k8s-spring-gateway-v2
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8080
+        env:
+        - name: PROFILES_ACTIVE
+          value: dev
+        - name: NACOS_HOST
+          value: nacos:8848

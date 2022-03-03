@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name:  zbt-mfwr-gateway-svc
+spec:
+  selector:
+    app:   zbt-mfwr-gateway
+  type:  ClusterIP
+  ports:
+  - name:  http
+    port:  8080
+    targetPort:  8080

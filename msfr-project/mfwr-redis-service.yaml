@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: zbt-test
+spec:
+  clusterIP: None
+  ports:
+  - name: redis
+    port: 6379
+    protocol: TCP
+    targetPort: 6379
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: redis
+  namespace: zbt-test
+subsets:
+- addresses:
+  - ip: 10.1.146.2
+  ports:
+  - name: redis
+    port: 6379
+    protocol: TCP

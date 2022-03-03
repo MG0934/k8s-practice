@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-controller-manager
+  name: kube-controller-manage-monitor
+  namespace: kube-system
+spec:
+  ports:
+  - name: https-metrics
+    port: 10252
+    protocol: TCP
+    targetPort: 10252
+  sessionAffinity: None
+  type: ClusterIP

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-spring-demo
+  namespace: zbt-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-spring-demo
+  template:
+    metadata:
+      labels:
+        app: k8s-spring-demo
+    spec:
+      nodeSelector:
+        spring: "true"
+      containers:
+      - name: spring-demo
+        image: registry.cn-hangzhou.aliyuncs.com/k8s_spring/test:k8s-spring-demo-v1
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: "/live"
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /live
+            port: 8080
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+        ports:
+          - containerPort: 8080
+        env:
+        - name: PROFILES_ACTIVE
+          value: dev
+        - name: NACOS_HOST
+          value: nacos:8848

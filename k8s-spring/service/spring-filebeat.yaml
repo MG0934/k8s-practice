@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-spring-demo
+  namespace: zbt-test
+spec:
+  replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 1  #也可以按比例配置，例如：20%
+      maxUnavailable: 0 #也可以按比例配置，例如：20%
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: k8s-spring-demo
+  template:
+    metadata:
+      labels:
+        app: k8s-spring-demo
+    spec:
+      nodeSelector:
+        spring: "true"
+      containers:
+      - name: filebeat
+        image: elastic/filebeat:7.4.2
+        resources:
+          requests:
+            memory: "100Mi" # 100Mi 的空间 1Gi 
+            cpu: "10m" # 10m的cpu  1cpu === 1000m 1m = 0.01
+          limits:
+            cpu: "200m"
+            memory: "300Mi"
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: podIp
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          - name: podName
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: podNamespace
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: podDeployName
+            value: app
+          - name: TZ
+            value: "Asia/Shanghai"
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: logpath
+          mountPath: /data/log/app/
+        - name: filebeatconf
+          mountPath: /usr/share/filebeat/filebeat.yml 
+          subPath: usr/share/filebeat/filebeat.yml
+      - name: spring-demo
+        image: registry.cn-hangzhou.aliyuncs.com/k8s_spring/test:k8s-spring-demo-v1
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: "500Mi" # 100Mi 的空间 1Gi 
+            cpu: "250m" # 10m的cpu  1cpu === 1000m 1m = 0.01
+          limits:
+            cpu: "500m"
+            memory: "1000Mi"
+        livenessProbe:
+          httpGet:
+            path: /api/healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/healthz
+            port: 8080
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+        ports:
+          - containerPort: 8080
+        env:
+        - name: JVM_OPTS
+          value: ""
+        - name: JAVA_OPTS
+          value: "--spring.cloud.nacos.config.server-addr=nacos:8848 --spring.cloud.nacos.discovery.server-addr=nacos:8848 --spring.profiles.active=dev"
+        volumeMounts:
+            - name: logpath
+              mountPath: /java/log/
+            - name: tz-config
+              mountPath: /etc/localtime
+            - name: tz-config
+              mountPath: /usr/share/zoneinfo/Asia/Shanghai            
+            - name: timezone
+              mountPath: /etc/timezone
+      volumes:
+          - name: tz-config
+            hostPath:
+              path: /usr/share/zoneinfo/Asia/Shanghai
+          - name: timezone
+            hostPath:
+              path: /etc/timezone
+              type: ""
+          - name: logpath
+            emptyDir: {}
+          - name: filebeatconf
+            configMap:
+              name: filebeatconf
+              items:
+                - key: filebeat.yml
+                  path: usr/share/filebeat/filebeat.yml
